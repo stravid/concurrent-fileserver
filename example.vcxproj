@@ -14,7 +14,7 @@
     <ProjectGuid>{A1F10DCA-6DE5-48AC-9231-2338FF837A85}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>example</RootNamespace>
-    <ProjectName>bartender</ProjectName>
+    <ProjectName>fileserver</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -76,7 +76,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BoundedBuffer.cpp" />
+    <ClCompile Include="Consumer.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Producer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="BoundedBuffer.h" />
+    <ClInclude Include="Consumer.h" />
+    <ClInclude Include="Producer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

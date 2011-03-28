@@ -1,3 +1,9 @@
+/**
+  Authors:
+    Mathias Paumgarten
+    David Strauﬂ
+**/
+
 #ifndef PRODUCER_H
 #define PRODUCER_H
 

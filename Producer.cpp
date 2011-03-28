@@ -1,3 +1,9 @@
+/**
+  Authors:
+    Mathias Paumgarten
+    David Strauﬂ
+**/
+
 #include "Producer.h"
 
 Producer::Producer(int port, BoundedBuffer *socketsBuffer) : 

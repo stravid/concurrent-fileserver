@@ -1,3 +1,9 @@
+/**
+  Authors:
+    Mathias Paumgarten
+    David Strauﬂ
+**/
+
 #ifndef BOUNDEDBUFFER_H
 #define BOUNDEDBUFFER_H
 

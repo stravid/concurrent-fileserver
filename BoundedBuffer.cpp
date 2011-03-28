@@ -1,3 +1,9 @@
+/**
+  Authors:
+    Mathias Paumgarten
+    David Strauﬂ
+**/
+
 #include "BoundedBuffer.h"
 
 void BoundedBuffer::put(tcp::socket *socket) {

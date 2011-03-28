@@ -1,3 +1,9 @@
+/**
+  Authors:
+    Mathias Paumgarten
+    David Strauﬂ
+**/
+
 #ifndef CONSUMER_H
 #define CONSUMER_H
 

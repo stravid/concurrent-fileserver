@@ -1,3 +1,9 @@
+/**
+  Authors:
+    Mathias Paumgarten
+    David Strauﬂ
+**/
+
 #include "Consumer.h"
 
 Consumer::Consumer(BoundedBuffer *socketBuffer) : sockets(socketBuffer) {}
@@ -27,8 +33,8 @@ void Consumer::run() {
         if (boost::filesystem::is_regular_file(path)) {
 
             httpResponse << "HTTP/1.0 200 OK\n";
-		    httpResponse << "Server: FileServer/0.0.1\n";
-		    httpResponse << "Content-Type: application/octet-stream\n";
+		        httpResponse << "Server: FileServer/0.0.1\n";
+		        httpResponse << "Content-Type: application/octet-stream\n";
             httpResponse << "Content-Length: " << boost::filesystem::file_size(path) << "\n\n";
 
             socket->send(boost::asio::buffer(httpResponse.str().c_str(), httpResponse.str().length()));

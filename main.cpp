@@ -1,3 +1,9 @@
+/**
+  Authors:
+    Mathias Paumgarten
+    David Strauﬂ
+**/
+
 #include <iostream>
 #include <boost/thread.hpp>
 #include "BoundedBuffer.h"

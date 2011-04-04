@@ -8,7 +8,7 @@
 
 ReaderWriterMutex::ReaderWriterMutex(void) : allowedWriters(1), readers(0) {}
 
-void ReaderWriterMutex::readerLock(){
+void ReaderWriterMutex::readerLock() {
     {
         boost::mutex::scoped_lock lock(readersMutex);
         readers++;
@@ -17,7 +17,7 @@ void ReaderWriterMutex::readerLock(){
     }
 }
 
-void ReaderWriterMutex::readerUnlock(){
+void ReaderWriterMutex::readerUnlock() {
     {
         boost::mutex::scoped_lock lock(readersMutex);
         readers--;

@@ -19,6 +19,7 @@ void Consumer::run() {
 
         tcp::socket *socket = sockets->get();
 
+        // recieving the first chunk of the request
         char requestBuffer[REQUEST_BUFFER_SIZE];
 		int requestSize = socket->receive(boost::asio::buffer(requestBuffer, REQUEST_BUFFER_SIZE));
 
@@ -32,9 +33,11 @@ void Consumer::run() {
         // Erase leading slash from filepath request: /index.html ==> index.html
         filename.erase(0, 1);
 
+        // seperate GET from POST Requests
         if (method == "GET") {
 		    std::cout << "Requested file: " << filename << std::endl;
 
+            // creating a mutext for this file, if it doesn't already exist
             {
                 boost::mutex::scoped_lock lock(*fileMutexesMapMutex);
                 if(fileMutexes->find(filename) == fileMutexes->end()){
@@ -42,6 +45,7 @@ void Consumer::run() {
                 }
             }
 
+            // setting the readerslock to ensure that the file will not be deleted while read.
             fileMutexes->find(filename)->second->readerLock();
 
             boost::filesystem::path path(filename.c_str());
@@ -103,6 +107,8 @@ void Consumer::run() {
 
             receiveString.append(httpRequest.str());
 
+            // read the whole request from socket. The while will read as until the size of the chunk that is read is
+            // smaller than the REQUEST_BUFFER_SIZE. This means, that it is the last chunk.
             do {
 
                 recieveSize = socket->receive(boost::asio::buffer(buffer, REQUEST_BUFFER_SIZE));
@@ -110,26 +116,35 @@ void Consumer::run() {
 
             } while (REQUEST_BUFFER_SIZE == recieveSize);
 
+            // Browsers sent a boundry. If so you have to cut it out from the data.
             size_t boundaryPosition = receiveString.find("boundary=");
+
+            // Start of the actual data nd end of the header.
             size_t headerEndPosition = receiveString.find("\r\n\r\n") + 4;
     
             if (boundaryPosition != std::string::npos && boundaryPosition < headerEndPosition) {
         
+                // If the browser sent a boundry -> the data starts at the second empty line.
                 headerEndPosition = receiveString.find("\r\n\r\n", headerEndPosition) + 4;
 
+                // Removeing the boundry from the end of the file.
                 receiveString.erase(receiveString.find_last_of('\n', receiveString.size() - 3) + 1);
             }
     
+            // Removing the header from the file.
             receiveString = receiveString.substr(headerEndPosition);
 
             if (receiveString.size() < 5) {
 
+                // An empty request delets the file.
                 boost::filesystem::path path(filename);
                 remove(path);
 
                 fileMutexes->erase(filename);
 
             } else {
+
+                // Write in the file, only if its not currently read.
 
                 {
                     boost::mutex::scoped_lock lock(*fileMutexesMapMutex);

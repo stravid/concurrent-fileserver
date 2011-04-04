@@ -6,7 +6,10 @@
 
 #include "Consumer.h"
 
-Consumer::Consumer(BoundedBuffer *socketBuffer) : sockets(socketBuffer) {}
+Consumer::Consumer(BoundedBuffer *socketBuffer, std::map<std::string, ReaderWriterMutex*>* fileMutexes, boost::mutex* fileMutexesMapMutex) : 
+    sockets(socketBuffer),
+    fileMutexes(fileMutexes),
+    fileMutexesMapMutex(fileMutexesMapMutex) {}
 
 void Consumer::run() {
 
@@ -31,6 +34,15 @@ void Consumer::run() {
 
         if (method == "GET") {
 		    std::cout << "Requested file: " << filename << std::endl;
+
+            {
+                boost::mutex::scoped_lock lock(*fileMutexesMapMutex);
+                if(fileMutexes->find(filename) == fileMutexes->end()){
+                    fileMutexes->insert(std::pair<std::string, ReaderWriterMutex*>(filename, new ReaderWriterMutex()));
+                }
+            }
+
+            fileMutexes->find(filename)->second->readerLock();
 
             boost::filesystem::path path(filename.c_str());
 
@@ -79,55 +91,64 @@ void Consumer::run() {
 
             }
 
+            fileMutexes->find(filename)->second->readerUnlock();
+
         } else if (method == "POST") { 
 
             std::cout << "Upload file: " << filename << std::endl;
 
-            int bytesTotal;
-            std::string headerBuffer, content, boundary;
+            long recieveSize;
+            char buffer[REQUEST_BUFFER_SIZE];
+            std::string receiveString;
 
-            // Find Content-Length in header
-            httpRequest.seekg(httpRequest.str().find("Content-Length:") + 16);
-            httpRequest >> headerBuffer;
-            sscanf_s(headerBuffer.c_str(), "%d", &bytesTotal);
+            receiveString.append(httpRequest.str());
 
-            int boundaryPosition = httpRequest.str().find("boundary=");
-            if(boundaryPosition != -1){
-                httpRequest.seekg(boundaryPosition + 9);
-                httpRequest >> boundary;
+            do {
+
+                recieveSize = socket->receive(boost::asio::buffer(buffer, REQUEST_BUFFER_SIZE));
+                receiveString.append(std::string(buffer, recieveSize));
+
+            } while (REQUEST_BUFFER_SIZE == recieveSize);
+
+            size_t boundaryPosition = receiveString.find("boundary=");
+            size_t headerEndPosition = receiveString.find("\r\n\r\n") + 4;
+    
+            if (boundaryPosition != std::string::npos && boundaryPosition < headerEndPosition) {
+        
+                headerEndPosition = receiveString.find("\r\n\r\n", headerEndPosition) + 4;
+
+                receiveString.erase(receiveString.find_last_of('\n', receiveString.size() - 3) + 1);
             }
+    
+            receiveString = receiveString.substr(headerEndPosition);
 
-            // Find Blank Lines after header before body
-            int firstBlankLine = httpRequest.str().find("\r\n\r\n");
+            if (receiveString.size() < 5) {
 
-            // Fetch content that was already recieved from first socket->recieve
-            content.append(httpRequest.str().substr(firstBlankLine + 4));
+                boost::filesystem::path path(filename);
+                remove(path);
 
-            int bytesLoaded = content.size();
-            
-            // Fetch rest of content by 1024 Byte chunks
-            while(bytesLoaded <= bytesTotal){
-                memset(requestBuffer, 0, REQUEST_BUFFER_SIZE);
-                socket->receive(boost::asio::buffer(requestBuffer, REQUEST_BUFFER_SIZE));
-                content.append(requestBuffer);
-                bytesLoaded += REQUEST_BUFFER_SIZE;
+                fileMutexes->erase(filename);
+
+            } else {
+
+                {
+                    boost::mutex::scoped_lock lock(*fileMutexesMapMutex);
+                    if(fileMutexes->find(filename) == fileMutexes->end()){
+                        fileMutexes->insert(std::pair<std::string, ReaderWriterMutex*>(filename, new ReaderWriterMutex()));
+                    }
+                }
+
+                fileMutexes->find(filename)->second->writerLock();
+
+                std::ofstream uploadFile;
+
+                uploadFile.open(filename, std::ios::binary);
+                uploadFile << receiveString;
+
+                uploadFile.close();
+
+                fileMutexes->find(filename)->second->writerUnlock();
             }
-            
-            // crop boundary
-            if(boundaryPosition != -1){
-                content.erase(0, content.find("\r\n\r\n") + 4);
-                int boundaryEndPosition = content.find("--" + boundary);
-                //content.erase(content.find("\r\n--" + boundary));
-            }
-
-            std::ofstream uploadFile;
-            uploadFile.open(filename, std::ios::binary);
-
-		    if(uploadFile.is_open()) {
-			    uploadFile << content;
-			    uploadFile.close();
-            }
-            
         }
 		
 		socket->shutdown(tcp::socket::shutdown_both);

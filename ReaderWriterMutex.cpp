@@ -1,3 +1,9 @@
+/**
+  Authors:
+    Mathias Paumgarten
+    David Strauﬂ
+**/
+
 #include "ReaderWriterMutex.h"
 
 ReaderWriterMutex::ReaderWriterMutex(void) : allowedWriters(1), readers(0) {}

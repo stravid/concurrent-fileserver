@@ -1,3 +1,9 @@
+/**
+  Authors:
+    Mathias Paumgarten
+    David Strauﬂ
+**/
+
 #ifndef READERWRITERMUTEX_H
 #define READERWRITERMUTEX_H
 
